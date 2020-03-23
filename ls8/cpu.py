@@ -15,10 +15,6 @@ class CPU:
         self.pc = 0
         # IR: Instruction Register, contains a copy of the currently executing instruction
         self.ir = [0] * 256
-        # MAR: Memory Address Register, holds the memory address we're reading or writing
-        self.mar = 0
-        # MDR: Memory Data Register, holds the value to write or the value just read
-        self.mdr = 0
         # FL: Flags
         self.fl = 0
         # ram
@@ -32,13 +28,24 @@ class CPU:
         After performing math on registers in the emulator, bitwise-AND the result with 0xFF (255) 
         to keep the register values in that range.
         """
-        self.reg = dict()
+        self.reg = [0] * 8
 
     def load(self):
         """Load a program into memory."""
 
         address = 0
 
+        program = []
+        with open('examples/print8.ls8', 'r') as file:
+            allLines = file.readlines()
+            for i in range(0, len(allLines)):
+                line = allLines[i].replace('\n','').strip()
+                if '#' in allLines[i]:
+                    line = allLines[i].split('#')[0].strip()
+                if len(line) > 0:
+                    program.append(int(line, 2))
+
+        print(program)
         # For now, we've just hardcoded a program:
         program = [
             # From print8.ls8
@@ -196,14 +203,17 @@ class CPU:
         If the CPU is not halted by a HLT instruction, go to step 1.
 
         """
-        pcAlterCommands = ['CALL','INT','IRET','JMP','JNE','JEQ','JGT','JGE','JLT','JLE','RET']
+        # pcAlterCommands = ['CALL','INT','IRET','JMP','JNE','JEQ','JGT','JGE','JLT','JLE','RET']
         while self.canRun:
+            # get instruction
             instruction = self.ram_read(self.pc)
+            # save it in instruction register
             self.ir[self.pc] = instruction
             # get operation name
             operation = self.getOperation(instruction)
-
+            # if the operation is to stop 
             if operation is 'HLT':
+                # stop now
                 self.hlt()
 
             # decode instruction
@@ -213,22 +223,26 @@ class CPU:
             setPC = int(instruct[3].strip() or '0', 2)
             identifier = int(instruct[4:].strip() or '0000', 2)
 
-            """ print(
+            print(
                 f'\n\nram_read {int(instruct,2):08b}', 
                 f'\noperands {operands:02b}', 
                 f'\nALU op? {alu:01b}', 
                 f'\nsets PC? {setPC:01b}', 
                 f'\ninstruct identifier {identifier:04b}'
-            ) """
+            )
             # if it is an ALU operation
             if alu == 0b1:
+                # get param 1
                 instruct_a = self.ram_read(self.pc + 1)
+                # get param 2
                 instruct_b = self.ram_read(self.pc + 2)
+                # run ALU operation
                 self.alu(operation, instruct_a, instruct_b)
-            elif alu == 0b0: # else, if its not ALU operation
+            # else, if its not ALU operation
+            elif alu == 0b0: 
                 # if it is LDI operation
                 if operation == 'LDI':
-                    # get the two arguments, registry and value
+                    # get the arguments, registry and value
                     instruct_a = self.ram_read(self.pc + 1)
                     instruct_b = self.ram_read(self.pc + 2)
                     # run LDI
@@ -245,12 +259,10 @@ class CPU:
                 # pc is advanced to subsequent instruction
                 # print('self.pc +=', int(operands))
                 self.pc += int(operands)
-            else:
-                self.pc += 1
 
             # self.trace()
 
-    def ram_read(self, address):
+    def ram_read(self, mar):
         """
         Meanings of the bits in the first byte of each instruction: AABCDDDD
         AA Number of operands for this opcode, 0-2
@@ -261,13 +273,13 @@ class CPU:
         the total number of bytes in any instruction is the number of operands + 1 (for the opcode). 
         This allows you to know how far to advance the PC with each instruction.
         """
-        if address in self.ram:
-            return self.ram[address]
+        if mar in self.ram:
+            return self.ram[mar]
         return None
 
-    def ram_write(self, address, value):
-        self.ram[address] = value
-        return self.ram[address]
+    def ram_write(self, mar, mdr):
+        self.ram[mar] = mdr
+        return self.ram[mar]
 
     def LDI(self, register, value):
         """
@@ -290,6 +302,7 @@ class CPU:
             01000111 00000rrr
             47 0r
         """
-        print(int(self.ir[int(register)]))
+        numericValue = int(self.ir[int(register)])
+        print(numericValue)
         self.pc += 1
-        return True
+        return numericValue
