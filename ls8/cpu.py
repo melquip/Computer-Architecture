@@ -14,7 +14,7 @@ class CPU:
         # PC: Program Counter, address of the currently executing instruction
         self.pc = 0
         # IR: Instruction Register, contains a copy of the currently executing instruction
-        self.ir = 0
+        self.ir = [0] * 256
         # MAR: Memory Address Register, holds the memory address we're reading or writing
         self.mar = 0
         # MDR: Memory Data Register, holds the value to write or the value just read
@@ -125,36 +125,40 @@ class CPU:
             raise Exception("Unsupported ALU operation")
     
     def getOperation(self, identifier):
-        aluIdentifier = int("{0:8b}".format(identifier)[4:], 2)
+        ALUIdentifier = int("{0:8b}".format(identifier)[4:], 2)
         if identifier == 0b00000001:
             return "HLT"
-        elif aluIdentifier == 0b0000:
+        elif identifier == 0b10000010:
+            return "LDI"
+        elif identifier == 0b01000111:
+            return "PRN"
+        elif ALUIdentifier == 0b0000:
             return "ADD"
-        elif aluIdentifier == 0b0001:
+        elif ALUIdentifier == 0b0001:
             return "SUB"
-        elif aluIdentifier == 0b0010:
+        elif ALUIdentifier == 0b0010:
             return "MUL"
-        elif aluIdentifier == 0b0011:
+        elif ALUIdentifier == 0b0011:
             return "DIV"
-        elif aluIdentifier == 0b0100:
+        elif ALUIdentifier == 0b0100:
             return "MOD"
-        elif aluIdentifier == 0b0101:
+        elif ALUIdentifier == 0b0101:
             return "INC"
-        elif aluIdentifier == 0b0110:
+        elif ALUIdentifier == 0b0110:
             return "DEC"
-        elif aluIdentifier == 0b0111:
+        elif ALUIdentifier == 0b0111:
             return "CMP"
-        elif aluIdentifier == 0b1000:
+        elif ALUIdentifier == 0b1000:
             return "AND"
-        elif aluIdentifier == 0b1001:
+        elif ALUIdentifier == 0b1001:
             return "NOT"
-        elif aluIdentifier == 0b1010:
+        elif ALUIdentifier == 0b1010:
             return "OR"
-        elif aluIdentifier == 0b1011:
+        elif ALUIdentifier == 0b1011:
             return "XOR"
-        elif aluIdentifier == 0b1100:
+        elif ALUIdentifier == 0b1100:
             return "SHL"
-        elif aluIdentifier == 0b1101:
+        elif ALUIdentifier == 0b1101:
             return "SHR"
         return None
     
@@ -195,35 +199,54 @@ class CPU:
         pcAlterCommands = ['CALL','INT','IRET','JMP','JNE','JEQ','JGT','JGE','JLT','JLE','RET']
         while self.canRun:
             instruction = self.ram_read(self.pc)
+            self.ir[self.pc] = instruction
+            # get operation name
             operation = self.getOperation(instruction)
 
             if operation is 'HLT':
                 self.hlt()
 
+            # decode instruction
             instruct = "{0:8b}".format(instruction)
             operands = int(instruct[:2].strip() or '00', 2)
             alu = int(instruct[2].strip() or '0', 2)
             setPC = int(instruct[3].strip() or '0', 2)
             identifier = int(instruct[4:].strip() or '0000', 2)
 
-            print(
+            """ print(
                 f'\n\nram_read {int(instruct,2):08b}', 
                 f'\noperands {operands:02b}', 
                 f'\nALU op? {alu:01b}', 
                 f'\nsets PC? {setPC:01b}', 
                 f'\ninstruct identifier {identifier:04b}'
-            )
+            ) """
+            # if it is an ALU operation
             if alu == 0b1:
-                self.alu(operation, 1, 2)
-            elif alu == 0b0:
-                print('LDI, PRN')
+                instruct_a = self.ram_read(self.pc + 1)
+                instruct_b = self.ram_read(self.pc + 2)
+                self.alu(operation, instruct_a, instruct_b)
+            elif alu == 0b0: # else, if its not ALU operation
+                # if it is LDI operation
+                if operation == 'LDI':
+                    # get the two arguments, registry and value
+                    instruct_a = self.ram_read(self.pc + 1)
+                    instruct_b = self.ram_read(self.pc + 2)
+                    # run LDI
+                    self.LDI(instruct_a, instruct_b)
+
+                # if it is PRN operation
+                elif operation == 'PRN':
+                    # get the regitry argument
+                    instruct_a = self.ram_read(self.pc + 1)
+                    # run PRN
+                    self.PRN(instruct_a)
+
             if setPC is not 0b1:
                 # pc is advanced to subsequent instruction
-                print('self.pc +=', int(operands))
+                # print('self.pc +=', int(operands))
                 self.pc += int(operands)
             else:
-                # subsequent instructions?
-                pass
+                self.pc += 1
 
             # self.trace()
 
@@ -241,6 +264,32 @@ class CPU:
         if address in self.ram:
             return self.ram[address]
         return None
+
     def ram_write(self, address, value):
         self.ram[address] = value
         return self.ram[address]
+
+    def LDI(self, register, value):
+        """
+        LDI register immediate
+        Set the value of a register to an integer.
+        Machine code:
+            10000010 00000rrr iiiiiiii
+            82 0r ii
+        """
+        self.ir[int(register)] = value
+        self.pc += 1
+        return self.ir[int(register)]
+
+    def PRN(self, register):
+        """
+        PRN register pseudo-instruction
+        Print numeric value stored in the given register.
+        Print to the console the decimal integer value that is stored in the given register.
+        Machine code:
+            01000111 00000rrr
+            47 0r
+        """
+        print(int(self.ir[int(register)]))
+        self.pc += 1
+        return True
