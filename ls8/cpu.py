@@ -82,12 +82,16 @@ class CPU:
         print(f'ALU [{op}] -> {reg_a}, {reg_b}')
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
+
         elif op == "SUB":
             self.reg[reg_a] -= self.reg[reg_b]
+
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+
         elif op == "DIV":
             self.reg[reg_a] /= self.reg[reg_b]
+
         elif op == "MOD":
             # self.reg[reg_a] ?? self.reg[reg_b]
             pass
@@ -119,7 +123,41 @@ class CPU:
             pass
         else:
             raise Exception("Unsupported ALU operation")
-
+    
+    def getOperation(self, identifier):
+        aluIdentifier = int("{0:8b}".format(identifier)[4:], 2)
+        if identifier == 0b00000001:
+            return "HLT"
+        elif aluIdentifier == 0b0000:
+            return "ADD"
+        elif aluIdentifier == 0b0001:
+            return "SUB"
+        elif aluIdentifier == 0b0010:
+            return "MUL"
+        elif aluIdentifier == 0b0011:
+            return "DIV"
+        elif aluIdentifier == 0b0100:
+            return "MOD"
+        elif aluIdentifier == 0b0101:
+            return "INC"
+        elif aluIdentifier == 0b0110:
+            return "DEC"
+        elif aluIdentifier == 0b0111:
+            return "CMP"
+        elif aluIdentifier == 0b1000:
+            return "AND"
+        elif aluIdentifier == 0b1001:
+            return "NOT"
+        elif aluIdentifier == 0b1010:
+            return "OR"
+        elif aluIdentifier == 0b1011:
+            return "XOR"
+        elif aluIdentifier == 0b1100:
+            return "SHL"
+        elif aluIdentifier == 0b1101:
+            return "SHR"
+        return None
+    
     def hlt(self):
         """HLT operation"""
         self.canRun = False
@@ -152,21 +190,57 @@ class CPU:
         The instruction pointed to by the PC is fetched from RAM, decoded, and executed.
         If the instruction does not set the PC itself, the PC is advanced to point to the subsequent instruction.
         If the CPU is not halted by a HLT instruction, go to step 1.
+
         """
-        # self.trace()
         pcAlterCommands = ['CALL','INT','IRET','JMP','JNE','JEQ','JGT','JGE','JLT','JLE','RET']
         while self.canRun:
             instruction = self.ram_read(self.pc)
-            print(f'instruction {instruction:b}')
-            
-            if instruction not in pcAlterCommands and not :
-                # pc is advanced to subsequent instruction
-                self.pc += 1
-            elif instruction is 'HLT':
+            operation = self.getOperation(instruction)
+
+            if operation is 'HLT':
                 self.hlt()
 
+            instruct = "{0:8b}".format(instruction)
+            operands = int(instruct[:2].strip() or '00', 2)
+            alu = int(instruct[2].strip() or '0', 2)
+            setPC = int(instruct[3].strip() or '0', 2)
+            identifier = int(instruct[4:].strip() or '0000', 2)
+
+            print(
+                f'\n\nram_read {int(instruct,2):08b}', 
+                f'\noperands {operands:02b}', 
+                f'\nALU op? {alu:01b}', 
+                f'\nsets PC? {setPC:01b}', 
+                f'\ninstruct identifier {identifier:04b}'
+            )
+            if alu == 0b1:
+                self.alu(operation, 1, 2)
+            elif alu == 0b0:
+                print('LDI, PRN')
+            if setPC is not 0b1:
+                # pc is advanced to subsequent instruction
+                print('self.pc +=', int(operands))
+                self.pc += int(operands)
+            else:
+                # subsequent instructions?
+                pass
+
+            # self.trace()
+
     def ram_read(self, address):
-        return self.ram[address]
+        """
+        Meanings of the bits in the first byte of each instruction: AABCDDDD
+        AA Number of operands for this opcode, 0-2
+        B 1 if this is an ALU operation
+        C 1 if this instruction sets the PC
+        DDDD Instruction identifier
+        The number of operands AA is useful to know because 
+        the total number of bytes in any instruction is the number of operands + 1 (for the opcode). 
+        This allows you to know how far to advance the PC with each instruction.
+        """
+        if address in self.ram:
+            return self.ram[address]
+        return None
     def ram_write(self, address, value):
         self.ram[address] = value
         return self.ram[address]
