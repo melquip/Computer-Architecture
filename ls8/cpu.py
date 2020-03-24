@@ -67,7 +67,7 @@ class CPU:
         SHL  10101100 00000aaa 00000bbb
         SHR  10101101 00000aaa 00000bbb
         """
-        print(f'ALU [{op}] -> {reg_a}, {reg_b}')
+        print(f'ALU [{op}] -> {self.reg[reg_a]}, {self.reg[reg_b]}')
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
 
@@ -191,6 +191,7 @@ class CPU:
             self.ir[self.pc] = instruction
             # get operation name
             operation = self.getOperation(instruction)
+            print(f'run {instruction:08b} -> op {operation}, pc {self.pc}')
             # if the operation is to stop 
             if operation is 'HLT':
                 # stop now
@@ -204,6 +205,7 @@ class CPU:
             setPC = int(instruct[3].strip() or '0', 2)
             identifier = int(instruct[4:].strip() or '0000', 2)
 
+            """
             print(
                 f'\n\nram_read {int(instruct,2):08b}', 
                 f'\noperands {operands:02b}', 
@@ -211,6 +213,7 @@ class CPU:
                 f'\nsets PC? {setPC:01b}', 
                 f'\ninstruct identifier {identifier:04b}'
             )
+            """
 
             # get param 1
             instruct_a = self.ram_read(self.pc + 1)
@@ -231,10 +234,10 @@ class CPU:
                     # run PRN
                     self.PRN(instruct_a)
 
-            if setPC is not 0b1:
+            #if setPC is not 0b1:
                 # pc is advanced to subsequent instruction
-                # print('self.pc +=', int(operands))
-                self.pc += int(operands)
+            #print('self.pc +=', int(operands), self.pc + int(operands))
+            self.pc += int(operands) + 1
 
             # self.trace()
 
@@ -265,9 +268,8 @@ class CPU:
             10000010 00000rrr iiiiiiii
             82 0r ii
         """
-        self.ir[int(register)] = value
-        self.pc += 1
-        return self.ir[int(register)]
+        self.reg[int(register)] = value
+        return self.reg[int(register)]
 
     def PRN(self, register):
         """
@@ -278,7 +280,6 @@ class CPU:
             01000111 00000rrr
             47 0r
         """
-        numericValue = int(self.ir[int(register)])
+        numericValue = int(self.reg[int(register)])
         print(numericValue)
-        self.pc += 1
         return numericValue
