@@ -29,6 +29,9 @@ class CPU:
         to keep the register values in that range.
         """
         self.reg = [0] * 8
+
+        # R7 is reserved as the stack pointer (SP)
+        self.reg[7] = 0xF4 # start of stack
         """
         Branchtable
         """
@@ -68,6 +71,11 @@ class CPU:
         self.branchtable[0b10101011] = self.ALU_XOR
         self.branchtable[0b10101100] = self.ALU_SHL
         self.branchtable[0b10101101] = self.ALU_SHR
+        """
+        Stack
+        """
+        self.branchtable[0b01000101] = self.PUSH
+        self.branchtable[0b01000110] = self.POP
 
     def load(self, filename):
         """Load a program into memory."""
@@ -87,38 +95,54 @@ class CPU:
             print(f"{sys.argv[0]}: {sys.argv[1]} not found")
             sys.exit(2)
 
+    def regLimit(self, address):
+        self.reg[address] = self.reg[address] & 0xFF
+
     def ALU_ADD(self, reg_a, reg_b):
         self.reg[reg_a] += self.reg[reg_b]
+        self.regLimit(reg_a)
         
     def ALU_SUB(self, reg_a, reg_b):
         self.reg[reg_a] -= self.reg[reg_b]
-        
+        self.regLimit(reg_a)
+
     def ALU_MUL(self, reg_a, reg_b):
         self.reg[reg_a] *= self.reg[reg_b]
+        self.reg[reg_a] = self.reg[reg_a] & 0xFF
         
     def ALU_DIV(self, reg_a, reg_b):
-        self.reg[reg_a] /= self.reg[reg_b]
+        if self.reg[reg_b] is not 0:
+            self.reg[reg_a] /= self.reg[reg_b]
+            self.regLimit(reg_a)
+        else:
+            print('You cannot divide by zero!')
+            self.HLT()
         
     def ALU_MOD(self, reg_a, reg_b):
         self.reg[reg_a] = self.reg[reg_a] % self.reg[reg_b]
+        self.regLimit(reg_a)
         
     def ALU_INC(self, reg_a):
         self.reg[reg_a] += 1
+        self.regLimit(reg_a)
         
     def ALU_DEC(self, reg_a):
         self.reg[reg_a] -= 1
+        self.regLimit(reg_a)
         
     def ALU_CMP(self, reg_a, reg_b):
-        self.reg[reg_a] == self.reg[reg_b]
+        pass
+        #self.reg[reg_a] == self.reg[reg_b]
         
     def ALU_AND(self, reg_a, reg_b):
-        self.reg[reg_a] = self.reg[reg_a] and self.reg[reg_b]
+        self.reg[reg_a] = self.reg[reg_a] & self.reg[reg_b]
+        self.regLimit(reg_a)
         
     def ALU_NOT(self, reg_a):
         self.reg[reg_a] = not self.reg[reg_a]
         
     def ALU_OR(self, reg_a, reg_b):
-        self.reg[reg_a] = self.reg[reg_a] or self.reg[reg_b]
+        self.reg[reg_a] = self.reg[reg_a] | self.reg[reg_b]
         
     def ALU_XOR(self, reg_a, reg_b):
         pass
@@ -236,3 +260,35 @@ class CPU:
         numericValue = int(self.reg[int(register)])
         print(numericValue)
         return numericValue
+    
+    def PUSH(self, reg):
+        """
+        Push the value in the given register on the stack.
+        1. Decrement the `SP`.
+        2. Copy the value in the given register to the address pointed to by
+        `SP`.
+        Machine code:
+        ```
+        01000101 00000rrr
+        45 0r
+        ```
+        """
+        self.reg[7] -= 1
+        self.ram[self.reg[7]] = self.reg[reg]
+
+    def POP(self, reg):
+        """
+        Pop the value at the top of the stack into the given register.
+        1. Copy the value from the address pointed to by `SP` to the given register.
+        2. Increment `SP`.
+        Machine code:
+        ```
+        01000110 00000rrr
+        46 0r
+        ```
+        """
+        if self.reg[7] < 0xF4:
+            self.reg[reg] = self.ram[self.reg[7]]
+            self.reg[7] += 1
+        else:
+            raise Exception("Cannot pop from empty stack!")
