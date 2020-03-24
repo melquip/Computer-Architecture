@@ -38,8 +38,7 @@ class CPU:
         self.branchtable[0b10000010] = self.LDI
         self.branchtable[0b01000111] = self.PRN
         """
-        ALU operations.
-
+        ALU Operations
         ADD  10100000 00000aaa 00000bbb
         SUB  10100001 00000aaa 00000bbb
         MUL  10100010 00000aaa 00000bbb
@@ -55,34 +54,20 @@ class CPU:
         SHL  10101100 00000aaa 00000bbb
         SHR  10101101 00000aaa 00000bbb
         """
-        # "ADD"
-        self.branchtable[0b10100000] = lambda reg_a, reg_b: self.alu("ADD", reg_a, reg_b)
-        # "SUB"
-        self.branchtable[0b10100001] = lambda reg_a, reg_b: self.alu("SUB", reg_a, reg_b)
-        # "MUL"
-        self.branchtable[0b10100010] = lambda reg_a, reg_b: self.alu("MUL", reg_a, reg_b)
-        # "DIV"
-        self.branchtable[0b10100011] = lambda reg_a, reg_b: self.alu("DIV", reg_a, reg_b)
-        # "MOD"
-        self.branchtable[0b10100100] = lambda reg_a, reg_b: self.alu("MOD", reg_a, reg_b)
-        # "INC"
-        self.branchtable[0b01100101] = lambda reg_a: self.alu("INC", reg_a)
-        # "DEC"
-        self.branchtable[0b01100110] = lambda reg_a: self.alu("DEC", reg_a)
-        # "CMP"
-        self.branchtable[0b10100111] = lambda reg_a, reg_b: self.alu("CMP", reg_a, reg_b)
-        # "AND"
-        self.branchtable[0b10101000] = lambda reg_a, reg_b: self.alu("AND", reg_a, reg_b)
-        # "NOT"
-        self.branchtable[0b01101001] = lambda reg_a: self.alu("NOT", reg_a)
-        # "OR"
-        self.branchtable[0b10101010] = lambda reg_a, reg_b: self.alu("OR", reg_a, reg_b)
-        # "XOR"
-        self.branchtable[0b10101011] = lambda reg_a, reg_b: self.alu("XOR", reg_a, reg_b)
-        # "SHL"
-        self.branchtable[0b10101100] = lambda reg_a, reg_b: self.alu("SHL", reg_a, reg_b)
-        # "SHR"
-        self.branchtable[0b10101101] = lambda reg_a, reg_b: self.alu("SHR", reg_a, reg_b)
+        self.branchtable[0b10100000] = self.ALU_ADD
+        self.branchtable[0b10100001] = self.ALU_SUB
+        self.branchtable[0b10100010] = self.ALU_MUL
+        self.branchtable[0b10100011] = self.ALU_DIV
+        self.branchtable[0b10100100] = self.ALU_MOD
+        self.branchtable[0b01100101] = self.ALU_INC
+        self.branchtable[0b01100110] = self.ALU_DEC
+        self.branchtable[0b10100111] = self.ALU_CMP
+        self.branchtable[0b10101000] = self.ALU_AND
+        self.branchtable[0b01101001] = self.ALU_NOT
+        self.branchtable[0b10101010] = self.ALU_OR
+        self.branchtable[0b10101011] = self.ALU_XOR
+        self.branchtable[0b10101100] = self.ALU_SHL
+        self.branchtable[0b10101101] = self.ALU_SHR
 
     def load(self, filename):
         """Load a program into memory."""
@@ -102,37 +87,47 @@ class CPU:
             print(f"{sys.argv[0]}: {sys.argv[1]} not found")
             sys.exit(2)
 
-    def alu(self, op, reg_a, reg_b = 0):
-        if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b] # "ADD"
-        elif op == "SUB":
-            self.reg[reg_a] -= self.reg[reg_b] # "SUB"
-        elif op == "MUL":
-            self.reg[reg_a] *= self.reg[reg_b] # "MUL"
-        elif op == "DIV":
-            self.reg[reg_a] /= self.reg[reg_b] # "DIV"
-        elif op == "MOD":
-            self.reg[reg_a] = self.reg[reg_a] % self.reg[reg_b] # "MOD"
-        elif op == "INC":
-            self.reg[reg_a] += 1 # "INC"
-        elif op == "DEC":
-            self.reg[reg_a] -= 1 # "DEC"
-        elif op == "CMP":
-            self.reg[reg_a] == self.reg[reg_b] # "CMP"
-        elif op == "AND":
-            self.reg[reg_a] = self.reg[reg_a] and self.reg[reg_b] # "AND"
-        elif op == "NOT":
-            self.reg[reg_a] = not self.reg[reg_a] # "NOT"
-        elif op == "OR":
-            self.reg[reg_a] = self.reg[reg_a] or self.reg[reg_b] # "OR"
-        elif op == "XOR":
-            pass
-        elif op == "SHL":
-            pass
-        elif op == "SHR":
-            pass
-        else:
-            raise Exception("Unsupported ALU operation")
+    def ALU_ADD(self, reg_a, reg_b):
+        self.reg[reg_a] += self.reg[reg_b]
+        
+    def ALU_SUB(self, reg_a, reg_b):
+        self.reg[reg_a] -= self.reg[reg_b]
+        
+    def ALU_MUL(self, reg_a, reg_b):
+        self.reg[reg_a] *= self.reg[reg_b]
+        
+    def ALU_DIV(self, reg_a, reg_b):
+        self.reg[reg_a] /= self.reg[reg_b]
+        
+    def ALU_MOD(self, reg_a, reg_b):
+        self.reg[reg_a] = self.reg[reg_a] % self.reg[reg_b]
+        
+    def ALU_INC(self, reg_a):
+        self.reg[reg_a] += 1
+        
+    def ALU_DEC(self, reg_a):
+        self.reg[reg_a] -= 1
+        
+    def ALU_CMP(self, reg_a, reg_b):
+        self.reg[reg_a] == self.reg[reg_b]
+        
+    def ALU_AND(self, reg_a, reg_b):
+        self.reg[reg_a] = self.reg[reg_a] and self.reg[reg_b]
+        
+    def ALU_NOT(self, reg_a):
+        self.reg[reg_a] = not self.reg[reg_a]
+        
+    def ALU_OR(self, reg_a, reg_b):
+        self.reg[reg_a] = self.reg[reg_a] or self.reg[reg_b]
+        
+    def ALU_XOR(self, reg_a, reg_b):
+        pass
+        
+    def ALU_SHL(self, reg_a, reg_b):
+        pass
+        
+    def ALU_SHR(self, reg_a, reg_b):
+        pass
 
     def getOperation(self, identifier):
         if identifier in self.branchtable:
@@ -173,7 +168,6 @@ class CPU:
         If the CPU is not halted by a HLT instruction, go to step 1.
 
         """
-        # pcAlterCommands = ['CALL','INT','IRET','JMP','JNE','JEQ','JGT','JGE','JLT','JLE','RET']
         while self.canRun:
             # get instruction
             instruction = self.ram_read(self.pc)
