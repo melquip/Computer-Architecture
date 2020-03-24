@@ -30,39 +30,23 @@ class CPU:
         """
         self.reg = [0] * 8
 
-    def load(self):
+    def load(self, filename):
         """Load a program into memory."""
-
-        address = 0
-
-        program = []
-        with open('examples/print8.ls8', 'r') as file:
-            allLines = file.readlines()
-            for i in range(0, len(allLines)):
-                line = allLines[i].replace('\n','').strip()
-                if '#' in allLines[i]:
-                    line = allLines[i].split('#')[0].strip()
-                if len(line) > 0:
-                    program.append(int(line, 2))
-
-        print(program)
-        # For now, we've just hardcoded a program:
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
-
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
-
-        self.canRun = True
-
+        try:
+            address = 0
+            with open(filename, 'r') as file:
+                allLines = file.readlines()
+                for i in range(0, len(allLines)):
+                    line = allLines[i].replace('\n','').strip()
+                    if '#' in allLines[i]:
+                        line = allLines[i].split('#')[0].strip()
+                    if len(line) > 0:
+                        self.ram[address] = int(line, 2)
+                        address += 1
+            self.canRun = True
+        except FileNotFoundError:
+            print(f"{sys.argv[0]}: {sys.argv[1]} not found")
+            sys.exit(2)
 
     def alu(self, op, reg_a, reg_b):
         """
@@ -73,12 +57,9 @@ class CPU:
         MUL  10100010 00000aaa 00000bbb
         DIV  10100011 00000aaa 00000bbb
         MOD  10100100 00000aaa 00000bbb
-
         INC  01100101 00000rrr
         DEC  01100110 00000rrr
-
         CMP  10100111 00000aaa 00000bbb
-
         AND  10101000 00000aaa 00000bbb
         NOT  01101001 00000rrr
         OR   10101010 00000aaa 00000bbb
@@ -132,40 +113,39 @@ class CPU:
             raise Exception("Unsupported ALU operation")
     
     def getOperation(self, identifier):
-        ALUIdentifier = int("{0:8b}".format(identifier)[4:], 2)
         if identifier == 0b00000001:
             return "HLT"
         elif identifier == 0b10000010:
             return "LDI"
         elif identifier == 0b01000111:
             return "PRN"
-        elif ALUIdentifier == 0b0000:
+        elif identifier == 0b10100000:
             return "ADD"
-        elif ALUIdentifier == 0b0001:
+        elif identifier == 0b10100001:
             return "SUB"
-        elif ALUIdentifier == 0b0010:
+        elif identifier == 0b10100010:
             return "MUL"
-        elif ALUIdentifier == 0b0011:
+        elif identifier == 0b10100011:
             return "DIV"
-        elif ALUIdentifier == 0b0100:
+        elif identifier == 0b10100100:
             return "MOD"
-        elif ALUIdentifier == 0b0101:
+        elif identifier == 0b01100101:
             return "INC"
-        elif ALUIdentifier == 0b0110:
+        elif identifier == 0b01100110:
             return "DEC"
-        elif ALUIdentifier == 0b0111:
+        elif identifier == 0b10100111:
             return "CMP"
-        elif ALUIdentifier == 0b1000:
+        elif identifier == 0b10101000:
             return "AND"
-        elif ALUIdentifier == 0b1001:
+        elif identifier == 0b01101001:
             return "NOT"
-        elif ALUIdentifier == 0b1010:
+        elif identifier == 0b10101010:
             return "OR"
-        elif ALUIdentifier == 0b1011:
+        elif identifier == 0b10101011:
             return "XOR"
-        elif ALUIdentifier == 0b1100:
+        elif identifier == 0b10101100:
             return "SHL"
-        elif ALUIdentifier == 0b1101:
+        elif identifier == 0b10101101:
             return "SHR"
         return None
     
@@ -215,6 +195,7 @@ class CPU:
             if operation is 'HLT':
                 # stop now
                 self.hlt()
+                sys.exit(1)
 
             # decode instruction
             instruct = "{0:8b}".format(instruction)
@@ -230,28 +211,23 @@ class CPU:
                 f'\nsets PC? {setPC:01b}', 
                 f'\ninstruct identifier {identifier:04b}'
             )
+
+            # get param 1
+            instruct_a = self.ram_read(self.pc + 1)
+            # get param 2
+            instruct_b = self.ram_read(self.pc + 2)
             # if it is an ALU operation
             if alu == 0b1:
-                # get param 1
-                instruct_a = self.ram_read(self.pc + 1)
-                # get param 2
-                instruct_b = self.ram_read(self.pc + 2)
                 # run ALU operation
                 self.alu(operation, instruct_a, instruct_b)
             # else, if its not ALU operation
             elif alu == 0b0: 
                 # if it is LDI operation
                 if operation == 'LDI':
-                    # get the arguments, registry and value
-                    instruct_a = self.ram_read(self.pc + 1)
-                    instruct_b = self.ram_read(self.pc + 2)
                     # run LDI
                     self.LDI(instruct_a, instruct_b)
-
                 # if it is PRN operation
                 elif operation == 'PRN':
-                    # get the regitry argument
-                    instruct_a = self.ram_read(self.pc + 1)
                     # run PRN
                     self.PRN(instruct_a)
 
