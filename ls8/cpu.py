@@ -175,28 +175,11 @@ class CPU:
             self.ir[self.pc] = instruction
             # get operation name
             operation = self.getOperation(instruction)
-            print(f'run {instruction:08b} -> pc {self.pc}')
+            # print(f'run {instruction:08b} -> pc {self.pc}')
             # decode instruction
             instruct = "{0:8b}".format(instruction)
             # operands = int(instruct[:2].strip() or '00', 2)
             operands = instruction >> 6
-            # alu = int(instruct[2].strip() or '0', 2)
-            alu = instruction >> 5 & 0b001
-            # setPC = int(instruct[3].strip() or '0', 2)
-            setPC = instruction >> 4 & 0b0001
-            
-            # identifier = int(instruct[4:].strip() or '0000', 2)
-
-            """
-            print(
-                f'\n\nram_read {int(instruct,2):08b}', 
-                f'\noperands {operands:02b}', 
-                f'ALU? {alu:01b}', 
-                f'sets PC? {setPC:01b}', 
-                #f'identifier {identifier:04b}'
-            )
-            """
-
             # get param 1
             instruct_a = self.ram_read(self.pc + 1)
             # get param 2
@@ -209,9 +192,6 @@ class CPU:
             else:
                 operation()
             
-            #if setPC is not 0b1:
-                # pc is advanced to subsequent instruction
-            #print('self.pc +=', int(operands), self.pc + int(operands))
             self.pc += int(operands) + 1
 
     def ram_read(self, mar):
