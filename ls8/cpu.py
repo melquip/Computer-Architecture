@@ -29,6 +29,60 @@ class CPU:
         to keep the register values in that range.
         """
         self.reg = [0] * 8
+        """
+        Branchtable
+        """
+        self.branchtable = {}
+        # OTHERS
+        self.branchtable[0b00000001] = self.HLT
+        self.branchtable[0b10000010] = self.LDI
+        self.branchtable[0b01000111] = self.PRN
+        """
+        ALU operations.
+
+        ADD  10100000 00000aaa 00000bbb
+        SUB  10100001 00000aaa 00000bbb
+        MUL  10100010 00000aaa 00000bbb
+        DIV  10100011 00000aaa 00000bbb
+        MOD  10100100 00000aaa 00000bbb
+        INC  01100101 00000rrr
+        DEC  01100110 00000rrr
+        CMP  10100111 00000aaa 00000bbb
+        AND  10101000 00000aaa 00000bbb
+        NOT  01101001 00000rrr
+        OR   10101010 00000aaa 00000bbb
+        XOR  10101011 00000aaa 00000bbb
+        SHL  10101100 00000aaa 00000bbb
+        SHR  10101101 00000aaa 00000bbb
+        """
+        # "ADD"
+        self.branchtable[0b10100000] = lambda reg_a, reg_b: self.alu("ADD", reg_a, reg_b)
+        # "SUB"
+        self.branchtable[0b10100001] = lambda reg_a, reg_b: self.alu("SUB", reg_a, reg_b)
+        # "MUL"
+        self.branchtable[0b10100010] = lambda reg_a, reg_b: self.alu("MUL", reg_a, reg_b)
+        # "DIV"
+        self.branchtable[0b10100011] = lambda reg_a, reg_b: self.alu("DIV", reg_a, reg_b)
+        # "MOD"
+        self.branchtable[0b10100100] = lambda reg_a, reg_b: self.alu("MOD", reg_a, reg_b)
+        # "INC"
+        self.branchtable[0b01100101] = lambda reg_a: self.alu("INC", reg_a)
+        # "DEC"
+        self.branchtable[0b01100110] = lambda reg_a: self.alu("DEC", reg_a)
+        # "CMP"
+        self.branchtable[0b10100111] = lambda reg_a, reg_b: self.alu("CMP", reg_a, reg_b)
+        # "AND"
+        self.branchtable[0b10101000] = lambda reg_a, reg_b: self.alu("AND", reg_a, reg_b)
+        # "NOT"
+        self.branchtable[0b01101001] = lambda reg_a: self.alu("NOT", reg_a)
+        # "OR"
+        self.branchtable[0b10101010] = lambda reg_a, reg_b: self.alu("OR", reg_a, reg_b)
+        # "XOR"
+        self.branchtable[0b10101011] = lambda reg_a, reg_b: self.alu("XOR", reg_a, reg_b)
+        # "SHL"
+        self.branchtable[0b10101100] = lambda reg_a, reg_b: self.alu("SHL", reg_a, reg_b)
+        # "SHR"
+        self.branchtable[0b10101101] = lambda reg_a, reg_b: self.alu("SHR", reg_a, reg_b)
 
     def load(self, filename):
         """Load a program into memory."""
@@ -48,108 +102,44 @@ class CPU:
             print(f"{sys.argv[0]}: {sys.argv[1]} not found")
             sys.exit(2)
 
-    def alu(self, op, reg_a, reg_b):
-        """
-        ALU operations.
-
-        ADD  10100000 00000aaa 00000bbb
-        SUB  10100001 00000aaa 00000bbb
-        MUL  10100010 00000aaa 00000bbb
-        DIV  10100011 00000aaa 00000bbb
-        MOD  10100100 00000aaa 00000bbb
-        INC  01100101 00000rrr
-        DEC  01100110 00000rrr
-        CMP  10100111 00000aaa 00000bbb
-        AND  10101000 00000aaa 00000bbb
-        NOT  01101001 00000rrr
-        OR   10101010 00000aaa 00000bbb
-        XOR  10101011 00000aaa 00000bbb
-        SHL  10101100 00000aaa 00000bbb
-        SHR  10101101 00000aaa 00000bbb
-        """
-        print(f'ALU [{op}] -> {self.reg[reg_a]}, {self.reg[reg_b]}')
+    def alu(self, op, reg_a, reg_b = 0):
         if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
-
+            self.reg[reg_a] += self.reg[reg_b] # "ADD"
         elif op == "SUB":
-            self.reg[reg_a] -= self.reg[reg_b]
-
+            self.reg[reg_a] -= self.reg[reg_b] # "SUB"
         elif op == "MUL":
-            self.reg[reg_a] *= self.reg[reg_b]
-
+            self.reg[reg_a] *= self.reg[reg_b] # "MUL"
         elif op == "DIV":
-            self.reg[reg_a] /= self.reg[reg_b]
-
+            self.reg[reg_a] /= self.reg[reg_b] # "DIV"
         elif op == "MOD":
-            # self.reg[reg_a] ?? self.reg[reg_b]
-            pass
+            self.reg[reg_a] = self.reg[reg_a] % self.reg[reg_b] # "MOD"
         elif op == "INC":
-            # self.reg[reg_a] ?? reg_b
-            pass
+            self.reg[reg_a] += 1 # "INC"
         elif op == "DEC":
-            # self.reg[reg_a] ?? reg_b
-            pass
+            self.reg[reg_a] -= 1 # "DEC"
         elif op == "CMP":
-            return self.reg[reg_a] == self.reg[reg_b]
+            self.reg[reg_a] == self.reg[reg_b] # "CMP"
         elif op == "AND":
-            # self.reg[reg_a] ?? self.reg[reg_b]
-            pass
+            self.reg[reg_a] = self.reg[reg_a] and self.reg[reg_b] # "AND"
         elif op == "NOT":
-            # self.reg[reg_a] ?? self.reg[reg_b]
-            pass
+            self.reg[reg_a] = not self.reg[reg_a] # "NOT"
         elif op == "OR":
-            # self.reg[reg_a] ?? self.reg[reg_b]
-            pass
+            self.reg[reg_a] = self.reg[reg_a] or self.reg[reg_b] # "OR"
         elif op == "XOR":
-            # self.reg[reg_a] ?? self.reg[reg_b]
             pass
         elif op == "SHL":
-            # self.reg[reg_a] ?? self.reg[reg_b]
             pass
         elif op == "SHR":
-            # self.reg[reg_a] ?? self.reg[reg_b]
             pass
         else:
             raise Exception("Unsupported ALU operation")
-    
+
     def getOperation(self, identifier):
-        if identifier == 0b00000001:
-            return "HLT"
-        elif identifier == 0b10000010:
-            return "LDI"
-        elif identifier == 0b01000111:
-            return "PRN"
-        elif identifier == 0b10100000:
-            return "ADD"
-        elif identifier == 0b10100001:
-            return "SUB"
-        elif identifier == 0b10100010:
-            return "MUL"
-        elif identifier == 0b10100011:
-            return "DIV"
-        elif identifier == 0b10100100:
-            return "MOD"
-        elif identifier == 0b01100101:
-            return "INC"
-        elif identifier == 0b01100110:
-            return "DEC"
-        elif identifier == 0b10100111:
-            return "CMP"
-        elif identifier == 0b10101000:
-            return "AND"
-        elif identifier == 0b01101001:
-            return "NOT"
-        elif identifier == 0b10101010:
-            return "OR"
-        elif identifier == 0b10101011:
-            return "XOR"
-        elif identifier == 0b10101100:
-            return "SHL"
-        elif identifier == 0b10101101:
-            return "SHR"
-        return None
+        if identifier in self.branchtable:
+            return self.branchtable[identifier]
+        raise Exception("Unsupported operation")
     
-    def hlt(self):
+    def HLT(self):
         """HLT operation"""
         self.canRun = False
         return False
@@ -191,27 +181,25 @@ class CPU:
             self.ir[self.pc] = instruction
             # get operation name
             operation = self.getOperation(instruction)
-            print(f'run {instruction:08b} -> op {operation}, pc {self.pc}')
-            # if the operation is to stop 
-            if operation is 'HLT':
-                # stop now
-                self.hlt()
-                sys.exit(1)
-
+            print(f'run {instruction:08b} -> pc {self.pc}')
             # decode instruction
             instruct = "{0:8b}".format(instruction)
-            operands = int(instruct[:2].strip() or '00', 2)
-            alu = int(instruct[2].strip() or '0', 2)
-            setPC = int(instruct[3].strip() or '0', 2)
-            identifier = int(instruct[4:].strip() or '0000', 2)
+            # operands = int(instruct[:2].strip() or '00', 2)
+            operands = instruction >> 6
+            # alu = int(instruct[2].strip() or '0', 2)
+            alu = instruction >> 5 & 0b001
+            # setPC = int(instruct[3].strip() or '0', 2)
+            setPC = instruction >> 4 & 0b0001
+            
+            # identifier = int(instruct[4:].strip() or '0000', 2)
 
             """
             print(
                 f'\n\nram_read {int(instruct,2):08b}', 
                 f'\noperands {operands:02b}', 
-                f'\nALU op? {alu:01b}', 
-                f'\nsets PC? {setPC:01b}', 
-                f'\ninstruct identifier {identifier:04b}'
+                f'ALU? {alu:01b}', 
+                f'sets PC? {setPC:01b}', 
+                #f'identifier {identifier:04b}'
             )
             """
 
@@ -219,27 +207,18 @@ class CPU:
             instruct_a = self.ram_read(self.pc + 1)
             # get param 2
             instruct_b = self.ram_read(self.pc + 2)
-            # if it is an ALU operation
-            if alu == 0b1:
-                # run ALU operation
-                self.alu(operation, instruct_a, instruct_b)
-            # else, if its not ALU operation
-            elif alu == 0b0: 
-                # if it is LDI operation
-                if operation == 'LDI':
-                    # run LDI
-                    self.LDI(instruct_a, instruct_b)
-                # if it is PRN operation
-                elif operation == 'PRN':
-                    # run PRN
-                    self.PRN(instruct_a)
 
+            if operands == 1:
+                operation(instruct_a)
+            elif operands == 2:
+                operation(instruct_a, instruct_b)
+            else:
+                operation()
+            
             #if setPC is not 0b1:
                 # pc is advanced to subsequent instruction
             #print('self.pc +=', int(operands), self.pc + int(operands))
             self.pc += int(operands) + 1
-
-            # self.trace()
 
     def ram_read(self, mar):
         """
