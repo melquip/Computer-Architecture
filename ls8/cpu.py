@@ -76,6 +76,11 @@ class CPU:
         """
         self.branchtable[0b01000101] = self.PUSH
         self.branchtable[0b01000110] = self.POP
+        """
+        CALL & RET
+        """
+        self.branchtable[0b01010000] = self.CALL
+        self.branchtable[0b00010001] = self.RET
 
     def load(self, filename):
         """Load a program into memory."""
@@ -198,6 +203,7 @@ class CPU:
             # save it in instruction register
             self.ir[self.pc] = instruction
             # get operation name
+            # print(f'run -> {instruction:08b}')
             operation = self.getOperation(instruction)
             # print(f'run {instruction:08b} -> pc {self.pc}')
             # decode instruction
@@ -245,6 +251,7 @@ class CPU:
             10000010 00000rrr iiiiiiii
             82 0r ii
         """
+        # print(f'LDI -> {register:08b} = {value:08b}')
         self.reg[int(register)] = value
         return self.reg[int(register)]
 
@@ -261,7 +268,7 @@ class CPU:
         print(numericValue)
         return numericValue
     
-    def PUSH(self, reg):
+    def PUSH(self, address):
         """
         Push the value in the given register on the stack.
         1. Decrement the `SP`.
@@ -274,9 +281,9 @@ class CPU:
         ```
         """
         self.reg[7] -= 1
-        self.ram[self.reg[7]] = self.reg[reg]
+        self.ram[self.reg[7]] = self.reg[address]
 
-    def POP(self, reg):
+    def POP(self, address):
         """
         Pop the value at the top of the stack into the given register.
         1. Copy the value from the address pointed to by `SP` to the given register.
@@ -288,7 +295,43 @@ class CPU:
         ```
         """
         if self.reg[7] < 0xF4:
-            self.reg[reg] = self.ram[self.reg[7]]
+            self.reg[address] = self.ram[self.reg[7]]
             self.reg[7] += 1
+            return self.reg[address]
         else:
             raise Exception("Cannot pop from empty stack!")
+
+    def CALL(self, address):
+        """
+        Calls a subroutine (function) at the address stored in the register.
+        1. The address of the ***instruction*** _directly after_ `CALL` is
+        pushed onto the stack. This allows us to return to where we left off when the subroutine finishes executing.
+        2. The PC is set to the address stored in the given register. 
+        We jump to that location in RAM and execute the first instruction in the subroutine. 
+        The PC can move forward or backwards from its current location.
+        Machine code:
+        ```
+        01010000 00000rrr
+        50 0r
+        ```
+        """
+        # print(f'CALL -> go to reg {address:08b}, {self.reg[address]}')
+        # PUSH
+        self.reg[7] -= 1
+        self.ram[self.reg[7]] = self.pc + 1
+        # SET PC
+        self.pc = self.reg[address] - 2
+
+    def RET(self):
+        """
+        Return from subroutine.
+        Pop the value from the top of the stack and store it in the `PC`.
+        Machine Code:
+        ```
+        00010001
+        11
+        ```
+        """
+        # POP & SET PC
+        self.pc = self.ram[self.reg[7]]
+        self.reg[7] += 1
