@@ -16,7 +16,9 @@ class CPU:
         # IR: Instruction Register, contains a copy of the currently executing instruction
         self.ir = [0] * 256
         # FL: Flags
-        self.fl = 0
+        self.E = 0
+        self.L = 0
+        self.G = 0
         # ram
         self.ram = dict()
         """
@@ -81,6 +83,12 @@ class CPU:
         """
         self.branchtable[0b01010000] = self.CALL
         self.branchtable[0b00010001] = self.RET
+        """
+        JUMPS
+        """
+        self.branchtable[0b01010100] = self.JMP
+        self.branchtable[0b01010101] = self.JEQ
+        self.branchtable[0b01010110] = self.JNE
 
     def load(self, filename):
         """Load a program into memory."""
@@ -113,7 +121,7 @@ class CPU:
 
     def ALU_MUL(self, reg_a, reg_b):
         self.reg[reg_a] *= self.reg[reg_b]
-        self.reg[reg_a] = self.reg[reg_a] & 0xFF
+        self.regLimit(reg_a)
         
     def ALU_DIV(self, reg_a, reg_b):
         if self.reg[reg_b] is not 0:
@@ -136,8 +144,24 @@ class CPU:
         self.regLimit(reg_a)
         
     def ALU_CMP(self, reg_a, reg_b):
-        pass
-        #self.reg[reg_a] == self.reg[reg_b]
+        """
+        Compare the values in two registers.
+        * If they are equal, set the Equal `E` flag to 1, otherwise set it to 0.
+        * If registerA is less than registerB, set the Less-than `L` flag to 1,
+        otherwise set it to 0.
+        * If registerA is greater than registerB, set the Greater-than `G` flag
+        to 1, otherwise set it to 0.
+        Machine code:
+        ```
+        10100111 00000aaa 00000bbb
+        A7 0a 0b
+        ```
+        """
+        valA = self.reg[reg_a]
+        valB = self.reg[reg_b]
+        self.E = int(valA == valB)
+        self.L = int(valA < valB)
+        self.G = int(valA > valB)
         
     def ALU_AND(self, reg_a, reg_b):
         self.reg[reg_a] = self.reg[reg_a] & self.reg[reg_b]
@@ -320,7 +344,7 @@ class CPU:
         self.reg[7] -= 1
         self.ram[self.reg[7]] = self.pc + 1
         # SET PC
-        self.pc = self.reg[address] - 2
+        self.pc = self.reg[address] - 2 # -2 cause operands
 
     def RET(self):
         """
@@ -335,3 +359,40 @@ class CPU:
         # POP & SET PC
         self.pc = self.ram[self.reg[7]]
         self.reg[7] += 1
+
+    def JMP(self, address):
+        """
+        Jump to the address stored in the given register.
+        Set the `PC` to the address stored in the given register.
+        Machine code:
+        ```
+        01010100 00000rrr
+        54 0r
+        ```
+        """
+        self.pc = self.reg[address] - 2
+    
+    def JEQ(self, address):
+        """
+        If `equal` flag is set (true), jump to the address stored in the given register.
+        Machine code:
+        ```
+        01010101 00000rrr
+        55 0r
+        ```
+        """
+        if self.E is True or self.E is 1:
+            self.JMP(address)
+
+    def JNE(self, address):
+        """
+        If `E` flag is clear (false, 0), jump to the address stored in the given
+        register.
+        Machine code:
+        ```
+        01010110 00000rrr
+        56 0r
+        ```
+        """
+        if self.E is False or self.E is 0:
+            self.JMP(address)
