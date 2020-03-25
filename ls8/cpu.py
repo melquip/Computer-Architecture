@@ -41,6 +41,7 @@ class CPU:
         # OTHERS
         self.branchtable[0b00000001] = self.HLT
         self.branchtable[0b10000010] = self.LDI
+        self.branchtable[0b10000011] = self.ADDI
         self.branchtable[0b01000111] = self.PRN
         """
         ALU Operations
@@ -287,7 +288,15 @@ class CPU:
             82 0r ii
         """
         # print(f'LDI -> {register:08b} = {value:08b}')
-        self.reg[int(register)] = value
+        self.reg[int(register)] = int(value)
+        return self.reg[int(register)]
+
+    def ADDI(self, register, value):
+        """
+        ADDI
+        Add an immediate value to a register
+        """
+        self.reg[int(register)] += value
         return self.reg[int(register)]
 
     def PRN(self, register):
@@ -409,8 +418,6 @@ class CPU:
             self.JMP(address)
 
 """
-SHL SHR
-
 Add an ADDI extension instruction to add an immediate value to a register
 Add the timer interrupt to the LS-8 emulator
 Add the keyboard interrupt to the LS-8 emulator
