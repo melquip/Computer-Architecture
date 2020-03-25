@@ -132,8 +132,12 @@ class CPU:
             self.HLT()
         
     def ALU_MOD(self, reg_a, reg_b):
-        self.reg[reg_a] = self.reg[reg_a] % self.reg[reg_b]
-        self.regLimit(reg_a)
+        if self.reg[reg_b] is not 0:
+            self.reg[reg_a] = self.reg[reg_a] % self.reg[reg_b]
+            self.regLimit(reg_a)
+        else:
+            print('You cannot divide by zero!')
+            self.HLT()
         
     def ALU_INC(self, reg_a):
         self.reg[reg_a] += 1
@@ -168,13 +172,22 @@ class CPU:
         self.regLimit(reg_a)
         
     def ALU_NOT(self, reg_a):
-        self.reg[reg_a] = not self.reg[reg_a]
+        self.reg[reg_a] = ~self.reg[reg_a]
         
     def ALU_OR(self, reg_a, reg_b):
         self.reg[reg_a] = self.reg[reg_a] | self.reg[reg_b]
         
     def ALU_XOR(self, reg_a, reg_b):
-        pass
+        """
+        Perform a bitwise-XOR between the values in registerA and registerB, storing the
+        result in registerA.
+        Machine code:
+        ```
+        10101011 00000aaa 00000bbb
+        AB 0a 0b
+        ```
+        """
+        self.reg[reg_a] = self.reg[reg_a] ^ self.reg[reg_b]
         
     def ALU_SHL(self, reg_a, reg_b):
         pass
@@ -370,7 +383,7 @@ class CPU:
         54 0r
         ```
         """
-        self.pc = self.reg[address] - 2
+        self.pc = self.reg[address] - 2 # -2 cause operands
     
     def JEQ(self, address):
         """
