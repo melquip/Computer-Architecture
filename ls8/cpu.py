@@ -155,11 +155,6 @@ class CPU:
         otherwise set it to 0.
         * If registerA is greater than registerB, set the Greater-than `G` flag
         to 1, otherwise set it to 0.
-        Machine code:
-        ```
-        10100111 00000aaa 00000bbb
-        A7 0a 0b
-        ```
         """
         valA = self.reg[reg_a]
         valB = self.reg[reg_b]
@@ -181,19 +176,22 @@ class CPU:
         """
         Perform a bitwise-XOR between the values in registerA and registerB, storing the
         result in registerA.
-        Machine code:
-        ```
-        10101011 00000aaa 00000bbb
-        AB 0a 0b
-        ```
         """
         self.reg[reg_a] = self.reg[reg_a] ^ self.reg[reg_b]
         
     def ALU_SHL(self, reg_a, reg_b):
-        pass
+        """
+        Shift the value in registerA left by the number of bits specified in registerB,
+        filling the low bits with 0.
+        """
+        self.reg[reg_a] = self.reg[reg_a] << self.reg[reg_b]
         
     def ALU_SHR(self, reg_a, reg_b):
-        pass
+        """
+        Shift the value in registerA right by the number of bits specified in registerB,
+        filling the high bits with 0.
+        """
+        self.reg[reg_a] = self.reg[reg_a] >> self.reg[reg_b]
 
     def getOperation(self, identifier):
         if identifier in self.branchtable:
@@ -409,3 +407,12 @@ class CPU:
         """
         if self.E is False or self.E is 0:
             self.JMP(address)
+
+"""
+SHL SHR
+
+Add an ADDI extension instruction to add an immediate value to a register
+Add the timer interrupt to the LS-8 emulator
+Add the keyboard interrupt to the LS-8 emulator
+Write an LS-8 assembly program to draw a curved histogram on the screen
+"""
