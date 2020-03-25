@@ -41,7 +41,7 @@ class CPU:
         # OTHERS
         self.branchtable[0b00000001] = self.HLT
         self.branchtable[0b10000010] = self.LDI
-        self.branchtable[0b10000011] = self.ADDI
+        self.branchtable[0b10000110] = self.ADDI
         self.branchtable[0b01000111] = self.PRN
         """
         ALU Operations
