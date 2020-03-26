@@ -33,7 +33,7 @@ class CPU:
         self.reg = [0] * 8
 
         # R7 is reserved as the stack pointer (SP)
-        self.reg[7] = 0xF4 # start of stack
+        self.reg[7] = 0xF3 # start of stack
         """
         Branchtable
         """
@@ -338,7 +338,7 @@ class CPU:
         46 0r
         ```
         """
-        if self.reg[7] < 0xF4:
+        if self.reg[7] < 0xF3:
             self.reg[address] = self.ram[self.reg[7]]
             self.reg[7] += 1
             return self.reg[address]
@@ -416,10 +416,3 @@ class CPU:
         """
         if self.E is False or self.E is 0:
             self.JMP(address)
-
-"""
-Add an ADDI extension instruction to add an immediate value to a register
-Add the timer interrupt to the LS-8 emulator
-Add the keyboard interrupt to the LS-8 emulator
-Write an LS-8 assembly program to draw a curved histogram on the screen
-"""
