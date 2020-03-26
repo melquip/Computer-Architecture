@@ -19,7 +19,9 @@ class CPU:
         self.E = 0
         self.L = 0
         self.G = 0
-        # ram
+        # Interrupt Addresses
+        self.I = [0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF]
+        # RAM
         self.ram = dict()
         """
         8 general-purpose 8-bit numeric registers R0-R7.
@@ -32,8 +34,14 @@ class CPU:
         """
         self.reg = [0] * 8
 
-        # R7 is reserved as the stack pointer (SP)
-        self.reg[7] = 0xF3 # start of stack
+        self.IM = 5
+        self.IS = 6
+        self.SP = 7
+
+        self.reg[self.IM] = False # interrupt mask (IM)
+        self.reg[self.IS] = False # interrupt status (IS)
+        self.reg[self.SP] = 0xF3 # stack pointer (SP)
+
         """
         Branchtable
         """
@@ -43,6 +51,10 @@ class CPU:
         self.branchtable[0b10000010] = self.LDI
         self.branchtable[0b10000110] = self.ADDI
         self.branchtable[0b01000111] = self.PRN
+        """
+        NOP
+        """
+        self.branchtable[0b00000000] = self.NOP
         """
         ALU Operations
         ADD  10100000 00000aaa 00000bbb
@@ -94,6 +106,8 @@ class CPU:
         Interrupts
         """
         self.branchtable[0b10000100] = self.ST
+        self.branchtable[0b01010010] = self.INT
+        self.branchtable[0b00010011] = self.IRET
 
     def load(self, filename):
         """Load a program into memory."""
@@ -207,6 +221,12 @@ class CPU:
         """HLT operation"""
         self.canRun = False
         return False
+
+    def NOP(self):
+        """
+        No operation. Do nothing for this instruction.
+        """
+        return True
 
     def trace(self):
         """
@@ -328,8 +348,8 @@ class CPU:
         45 0r
         ```
         """
-        self.reg[7] -= 1
-        self.ram[self.reg[7]] = self.reg[address]
+        self.reg[self.SP] -= 1
+        self.ram[self.reg[self.SP]] = self.reg[address]
 
     def POP(self, address):
         """
@@ -342,9 +362,9 @@ class CPU:
         46 0r
         ```
         """
-        if self.reg[7] < 0xF3:
-            self.reg[address] = self.ram[self.reg[7]]
-            self.reg[7] += 1
+        if self.reg[self.SP] < 0xF3:
+            self.reg[address] = self.ram[self.reg[self.SP]]
+            self.reg[self.SP] += 1
             return self.reg[address]
         else:
             raise Exception("Cannot pop from empty stack!")
@@ -365,8 +385,8 @@ class CPU:
         """
         # print(f'CALL -> go to reg {address:08b}, {self.reg[address]}')
         # PUSH
-        self.reg[7] -= 1
-        self.ram[self.reg[7]] = self.pc + 1
+        self.reg[self.SP] -= 1
+        self.ram[self.reg[self.SP]] = self.pc + 1
         # SET PC
         self.pc = self.reg[address] - 2 # -2 cause operands
 
@@ -381,8 +401,8 @@ class CPU:
         ```
         """
         # POP & SET PC
-        self.pc = self.ram[self.reg[7]]
-        self.reg[7] += 1
+        self.pc = self.ram[self.reg[self.SP]]
+        self.reg[self.SP] += 1
 
     def JMP(self, address):
         """
@@ -432,3 +452,34 @@ class CPU:
         ```
         """
         self.ram_write(self.reg[reg_a], self.reg[reg_b])
+
+    def INT(self, address):
+        """
+        Issue the interrupt number stored in the given register.
+        This will set the _n_th bit in the `IS` register to the value in the given
+        register.
+        Machine code:
+        ```
+        01010010 00000rrr
+        52 0r
+        ```
+        """
+        interruptNum = self.reg[address]
+        #self.reg[self.IS] = ""
+        #pass
+
+    def IRET(self):
+        """
+        Return from an interrupt handler.
+        The following steps are executed:
+        1. Registers R6-R0 are popped off the stack in that order.
+        2. The `FL` register is popped off the stack.
+        3. The return address is popped off the stack and stored in `PC`.
+        4. Interrupts are re-enabled
+        Machine code:
+        ```
+        00010011
+        13
+        ```
+        """
+        pass
