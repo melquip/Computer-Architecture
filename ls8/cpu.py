@@ -90,6 +90,10 @@ class CPU:
         self.branchtable[0b01010100] = self.JMP
         self.branchtable[0b01010101] = self.JEQ
         self.branchtable[0b01010110] = self.JNE
+        """
+        Interrupts
+        """
+        self.branchtable[0b10000100] = self.ST
 
     def load(self, filename):
         """Load a program into memory."""
@@ -416,3 +420,15 @@ class CPU:
         """
         if self.E is False or self.E is 0:
             self.JMP(address)
+
+    def ST(self, reg_a, reg_b):
+        """
+        Store value in registerB in the address stored in registerA.
+        This opcode writes to memory.
+        Machine code:
+        ```
+        10000100 00000aaa 00000bbb
+        84 0a 0b
+        ```
+        """
+        self.ram_write(self.reg[reg_a], self.reg[reg_b])
