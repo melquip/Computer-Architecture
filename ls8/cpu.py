@@ -20,9 +20,9 @@ class CPU:
         self.L = 0
         self.G = 0
         # Interrupt Addresses
-        self.I = [0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF]
-        self.INT_TIMER = 0
-        self.INT_KEYBOARD = 1
+        self.I = [0] * 8 # 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF
+        self.INT_TIMER = 0xF8
+        self.INT_KEYBOARD = 0xF9
         self.KEY_PRESSED = 0xF4
         self.canInterrupt = True
         # RAM
@@ -284,6 +284,7 @@ class CPU:
                     break
             # If a bit is set and can interrupt now
             if runInterrupt > -1 and self.canInterrupt:
+                print("Interrupting...")
                 # Disable further interrupts
                 self.canInterrupt = False
                 # Clear the bit in the IS register
@@ -297,11 +298,10 @@ class CPU:
                 # Registers R0-R6 are pushed on the stack in that order
                 for i in range(0, 6):
                     self.PUSH(self.reg[i])
-                # The address / vector of the appropriate handler is looked up 
-                # from the interrupt vector table.
-                # interrupt = self.I[runInterrupt]
+                # The address / vector of the appropriate handler is looked up from the interrupt vector table.
+                interrupt = self.I[runInterrupt]
                 # Set the PC is set to the handler address
-                # self.pc = interrupt
+                self.pc = interrupt
                 # While an interrupt is being serviced (between the handler being called and the IRET), 
                 # further interrupts are disabled
             
