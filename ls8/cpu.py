@@ -21,6 +21,10 @@ class CPU:
         self.G = 0
         # Interrupt Addresses
         self.I = [0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF]
+        self.INT_TIMER = 0
+        self.INT_KEYBOARD = 1
+        self.KEY_PRESSED = 0xF4
+        self.canInterrupt = True
         # RAM
         self.ram = dict()
         """
@@ -38,8 +42,8 @@ class CPU:
         self.IS = 6
         self.SP = 7
 
-        self.reg[self.IM] = False # interrupt mask (IM)
-        self.reg[self.IS] = False # interrupt status (IS)
+        self.reg[self.IM] = 0b00000000 # interrupt mask (IM)
+        self.reg[self.IS] = 0b00000000 # interrupt status (IS)
         self.reg[self.SP] = 0xF3 # stack pointer (SP)
 
         """
@@ -258,6 +262,47 @@ class CPU:
 
         """
         while self.canRun:
+            # interrupt handling
+            """
+            When an interrupt occurs from an external source or from an `INT`
+            instruction, the appropriate bit in the IS register will be set.
+            """
+            # The IM register is bitwise AND-ed with the IS register and the results stored as maskedInterrupts
+            self.reg[self.IM] = self.reg[self.IM] & self.reg[self.IS]
+            # Each bit of maskedInterrupts is checked, 
+            # starting from 0 and going up to the 7th bit, one for each interrupt
+            maskedInterrupts = "{0:08b}".format(self.reg[self.IM])[::-1]
+            runInterrupt = -1
+            for i in range(0, len(maskedInterrupts)):
+                bit = maskedInterrupts[i]
+                # If a bit is found to be set, follow the next sequence of steps
+                # Stop further checking of maskedInterrupts
+                if bit is '1':
+                    runInterrupt = i
+                    break
+            # If a bit is set and can interrupt now
+            if runInterrupt > -1 and self.canInterrupt:
+                # Disable further interrupts
+                self.canInterrupt = False
+                # Clear the bit in the IS register
+                self.reg[self.IS] = 0b00000000
+                # The PC register is pushed on the stack
+                self.PUSH(self.pc)
+                # The FL register is pushed on the stack
+                self.PUSH(self.E)
+                self.PUSH(self.L)
+                self.PUSH(self.G)
+                # Registers R0-R6 are pushed on the stack in that order
+                for i in range(0, 6):
+                    self.PUSH(self.reg[i])
+                # The address / vector of the appropriate handler is looked up 
+                # from the interrupt vector table.
+                # interrupt = self.I[runInterrupt]
+                # Set the PC is set to the handler address
+                # self.pc = interrupt
+                # While an interrupt is being serviced (between the handler being called and the IRET), 
+                # further interrupts are disabled
+            
             # get instruction
             instruction = self.ram_read(self.pc)
             # save it in instruction register
@@ -465,6 +510,8 @@ class CPU:
         ```
         """
         interruptNum = self.reg[address]
+        self.pc = interruptNum - 2 # cause operands
+
         #self.reg[self.IS] = ""
         #pass
 
