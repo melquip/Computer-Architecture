@@ -55,6 +55,8 @@ class CPU:
         self.branchtable[0b10000010] = self.LDI
         self.branchtable[0b10000110] = self.ADDI
         self.branchtable[0b01000111] = self.PRN
+        self.branchtable[0b10000011] = self.LD
+        self.branchtable[0b01001000] = self.PRA
         """
         NOP
         """
@@ -530,3 +532,29 @@ class CPU:
         ```
         """
         pass
+
+    def LD(self, reg_a, reg_b):
+        """
+        Loads registerA with the value at the memory address stored in registerB.
+        This opcode reads from memory.
+        Machine code:
+        ```
+        10000011 00000aaa 00000bbb
+        83 0a 0b
+        ```
+        """
+        self.reg[reg_a] = self.ram_read(self.reg[reg_b])
+
+    def PRA(self, address):
+        """
+        Print alpha character value stored in the given register.
+        Print to the console the ASCII character corresponding to the value in the
+        register.
+        Machine code:
+        ```
+        01001000 00000rrr
+        48 0r
+        ```
+        """
+        character = self.reg[address]
+        print(ord(character))
